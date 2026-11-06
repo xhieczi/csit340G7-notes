@@ -16,6 +16,13 @@ function Notes() {
     }
   ]);
 
+    const [form, setForm] = useState({ title: '', body: '' })
+    
+    function handleChange(event) {
+    const { name, value } = event.target
+    setForm({ ...form, [name]: value })
+    }
+
 
   return (
     <div className="grid min-h-screen grid-cols-[420px_1fr]">
@@ -37,14 +44,18 @@ function Notes() {
           <input
             name="title"
             placeholder="Title"
+            value={form.title}
+            onChange={handleChange}
             className="h-[52px] w-full border border-[#e6e6e6] px-4 text-lg outline-none placeholder:text-black/40 placeholder:italic focus:border-[#cf7d7d]"
-          />
+            />
 
-           <textarea
+            <textarea
             name="body"
             placeholder="Write your note"
+            value={form.body}
+            onChange={handleChange}
             className="h-[120px] w-full resize-none py-3 border border-[#e6e6e6] px-4 text-lg outline-none placeholder:text-black/40 placeholder:italic focus:border-[#cf7d7d]"
-          />
+            />
 
            <button
             type="submit"
