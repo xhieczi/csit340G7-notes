@@ -25,8 +25,11 @@ function Notes() {
     return saved ? JSON.parse(saved) : startingNotes
   })
 
-    const [form, setForm] = useState({ title: '', body: '' })
-    
+    const [form, setForm] = useState(() => {
+    const saved = localStorage.getItem('draft')
+    return saved ? JSON.parse(saved) : { title: '', body: '' }
+  })
+      
     function handleChange(event) {
     const { name, value } = event.target
     setForm({ ...form, [name]: value })
