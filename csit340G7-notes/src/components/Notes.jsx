@@ -154,6 +154,7 @@ function Notes() {
             </li>
           ))}
         </ul>
+        
 
         {loading && <p className="text-lg text-[#949494]">Loading notes...</p>}
         {error && <p className="text-lg text-[#b83f45]">{error}</p>}
