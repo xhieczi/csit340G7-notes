@@ -1,75 +1,99 @@
-
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 
 import NoteCard from './NoteCard.jsx'
 
-
-
 const API_URL = import.meta.env.VITE_API_URL
 
-
 function Notes() {
-    const [notes, setNotes] = useState([])
-    const [form, setForm] = useState(() => {
+  const [notes, setNotes] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [form, setForm] = useState(() => {
     const saved = localStorage.getItem('draft')
     return saved ? JSON.parse(saved) : { title: '', body: '' }
   })
-      
-    function handleChange(event) {
+
+  function handleChange(event) {
     const { name, value } = event.target
     setForm({ ...form, [name]: value })
-    }
+  }
 
-    function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault()
 
     const title = form.title.trim()
     const body = form.body.trim()
 
-    if (title === '' || body === '') return
+    if (!title || !body) return
 
-    setNotes([...notes, { id: Date.now(), title, body }])
-    setForm({ title: '', body: '' })
-    titleRef.current.focus()
+    try {
+      const res = await fetch(API_URL + '/notes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, body }),
+      })
+
+      if (!res.ok) {
+        throw new Error('The server answered ' + res.status)
+      }
+
+      const newNote = await res.json()
+      setNotes([...notes, newNote])
+      setForm({ title: '', body: '' })
+      titleRef.current.focus()
+    } catch (err) {
+      setError(err.message)
     }
-
-    const handleDelete = useCallback((id) => {
-    setNotes(notes.filter((note) => note.id !== id))
-    }, [notes])
-
-    const [search, setSearch] = useState('')
-
-     const titleRef = useRef(null)
- 
-    useEffect(() => {
-  async function loadNotes() {
-    const res = await fetch(API_URL + '/notes')
-    const data = await res.json()
-    setNotes(data)
   }
 
-  loadNotes()
-}, [])
+  const handleDelete = useCallback((id) => {
+    setNotes(notes.filter((note) => note.id !== id))
+  }, [notes])
 
-     useEffect(() => {
-       const id = setTimeout(() => {
+  const [search, setSearch] = useState('')
+
+  const titleRef = useRef(null)
+
+  useEffect(() => {
+    let ignore = false
+
+    async function loadNotes() {
+      try {
+        const res = await fetch(API_URL + '/notes')
+        if (!res.ok) {
+          throw new Error('The server answered ' + res.status)
+        }
+        const data = await res.json()
+        if (!ignore) setNotes(data)
+      } catch (err) {
+        if (!ignore) setError(err.message)
+      }
+      if (!ignore) setLoading(false)
+    }
+
+    loadNotes()
+    return () => {
+      ignore = true
+    }
+  }, [])
+
+  useEffect(() => {
+    const id = setTimeout(() => {
       localStorage.setItem('draft', JSON.stringify(form))
       console.log('draft saved:', form.title)
     }, 1000)
     return () => clearTimeout(id)
   }, [form])
 
-    const visibleNotes = useMemo(() => {
-   
+  const visibleNotes = useMemo(() => {
     return notes.filter((note) =>
       note.title.toLowerCase().includes(search.toLowerCase())
     )
   }, [notes, search])
 
-
   return (
     <div className="grid min-h-screen grid-cols-[420px_1fr]">
-        <aside className="sticky top-0 flex h-screen flex-col gap-5 bg-white px-8 py-9 shadow-[0_2px_4px_0_rgba(0,0,0,0.2),0_25px_50px_0_rgba(0,0,0,0.1)]">
+      <aside className="sticky top-0 flex h-screen flex-col gap-5 bg-white px-8 py-9 shadow-[0_2px_4px_0_rgba(0,0,0,0.2),0_25px_50px_0_rgba(0,0,0,0.1)]">
         <h1 className="text-[72px] leading-none font-extralight text-[#b83f45]">
           notes
         </h1>
@@ -84,7 +108,7 @@ function Notes() {
           />
         </div>
 
-         <form onSubmit={handleSubmit} className="grid gap-3">
+        <form onSubmit={handleSubmit} className="grid gap-3">
           <p className="text-[13px] font-normal tracking-wide text-[#949494]">NEW NOTE</p>
           <input
             ref={titleRef}
@@ -93,17 +117,17 @@ function Notes() {
             value={form.title}
             onChange={handleChange}
             className="h-[52px] w-full border border-[#e6e6e6] px-4 text-lg outline-none placeholder:text-black/40 placeholder:italic focus:border-[#cf7d7d]"
-            />
+          />
 
-            <textarea
+          <textarea
             name="body"
             placeholder="Write your note"
             value={form.body}
             onChange={handleChange}
             className="h-[120px] w-full resize-none py-3 border border-[#e6e6e6] px-4 text-lg outline-none placeholder:text-black/40 placeholder:italic focus:border-[#cf7d7d]"
-            />
+          />
 
-           <button
+          <button
             type="submit"
             className="h-[50px] cursor-pointer bg-[#b83f45] text-[17px] font-normal text-white hover:bg-[#a33439]"
           >
@@ -116,27 +140,29 @@ function Notes() {
         <h2 className="mb-6 text-3xl">All notes</h2>
 
         <ul className="grid grid-cols-3 items-start gap-5">
-        {visibleNotes.map((note) => (
+          {visibleNotes.map((note) => (
             <li
-            key={note.id}
-            className="relative min-h-32 bg-white px-6 py-5 shadow-[0_2px_4px_0_rgba(0,0,0,0.2),0_25px_50px_0_rgba(0,0,0,0.1)]"
+              key={note.id}
+              className="relative min-h-32 bg-white px-6 py-5 shadow-[0_2px_4px_0_rgba(0,0,0,0.2),0_25px_50px_0_rgba(0,0,0,0.1)]"
             >
-            <NoteCard
+              <NoteCard
                 id={note.id}
                 title={note.title}
                 body={note.body}
                 onDelete={handleDelete}
               />
             </li>
-        ))}
+          ))}
         </ul>
 
-        {visibleNotes.length === 0 && (
-        <p className="text-lg text-[#949494]">No notes found</p>
+        {loading && <p className="text-lg text-[#949494]">Loading notes...</p>}
+        {error && <p className="text-lg text-[#b83f45]">{error}</p>}
+        {!loading && !error && visibleNotes.length === 0 && (
+          <p className="text-lg text-[#949494]">No notes found</p>
         )}
       </section>
     </div>
   )
 }
- 
+
 export default Notes
