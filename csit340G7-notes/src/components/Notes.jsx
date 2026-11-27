@@ -5,26 +5,11 @@ import NoteCard from './NoteCard.jsx'
 
 
 
-const startingNotes = [
-  {
-    id: 1,
-    title: 'Review map and filter',
-    body: 'Redo the TodoMVC steps without looking at the guide.',
-  },
-  {
-    id: 2,
-    title: 'Prepare for the quiz',
-    body: 'Practice writing one handler for many inputs.',
-  },
-]
+const API_URL = import.meta.env.VITE_API_URL
 
 
 function Notes() {
-  const [notes, setNotes] = useState(() => {
-    const saved = localStorage.getItem('notes')
-    return saved ? JSON.parse(saved) : startingNotes
-  })
-
+    const [notes, setNotes] = useState([])
     const [form, setForm] = useState(() => {
     const saved = localStorage.getItem('draft')
     return saved ? JSON.parse(saved) : { title: '', body: '' }
@@ -57,8 +42,14 @@ function Notes() {
      const titleRef = useRef(null)
  
     useEffect(() => {
-    localStorage.setItem('notes', JSON.stringify(notes))
-     }, [notes])
+  async function loadNotes() {
+    const res = await fetch(API_URL + '/notes')
+    const data = await res.json()
+    setNotes(data)
+  }
+
+  loadNotes()
+}, [])
 
      useEffect(() => {
        const id = setTimeout(() => {
