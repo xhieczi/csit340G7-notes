@@ -8,7 +8,7 @@ const supabase = createClient(
 )
 
 const app = express()
-app.use(cors({ origin: 'http://localhost:5174' }))
+app.use(cors({ origin: 'http://localhost:5173' }))
 app.use(express.json())
 
 app.get('/notes', async (req, res) => {
